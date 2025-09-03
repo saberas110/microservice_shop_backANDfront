@@ -16,7 +16,6 @@ from datetime import timedelta
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -28,10 +27,11 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
 # Application definition
 
 INSTALLED_APPS = [
+
+    "daphne",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -40,17 +40,22 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'accounts.apps.AccountsConfig',
     'rest_framework_simplejwt',
+    'corsheaders',
+    'chat.apps.ChatConfig'
 
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    # 'accounts.middleware.AttachTokenMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'accounts.middleware.AttachTokenMiddleware'
 ]
 
 ROOT_URLCONF = 'User_app.urls'
@@ -71,6 +76,18 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'User_app.wsgi.application'
+ASGI_APPLICATION = "User_app.asgi.application"
+
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
+
 
 
 # Database
@@ -79,15 +96,14 @@ WSGI_APPLICATION = 'User_app.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'restframework'),
-        'USER': os.environ.get('DB_USER', 'saber'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'saber'),
-        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
-        'PORT': os.environ.get('DB_PORT', '5432')
+        'NAME': 'user_srv',
+        'USER': 'saber',
+        'PASSWORD': 'saber',
+        'HOST': '127.0.0.1',
+        'PORT': '5432'
 
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -107,18 +123,16 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Tehran'
 
 USE_I18N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
@@ -143,7 +157,36 @@ REST_FRAMEWORK = {
 
 }
 
+PRIVATE_KEY_PATH = Path(BASE_DIR) / 'private.pem'
+PUBLIC_KEY_PATH = Path(BASE_DIR) / 'public.pem'
+
+with open(PRIVATE_KEY_PATH, 'r') as f:
+    PRIVATE_KEY = f.read()
+
+with open(PUBLIC_KEY_PATH, 'r') as f:
+    PUBLIC_KEY = f.read()
+
+
+
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(hours=5),
+    'ALGORITHM' : 'RS256',
+    'SIGNING_KEY' : PRIVATE_KEY,
+    'VERIFYING_KEY' : PUBLIC_KEY,
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+]
+
+CSRF_COOKIE_HTTPONLY = False  # برای اینکه JS بتونه CSRF token رو بخونه
+CSRF_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SECURE = True  # فقط روی HTTPS
+

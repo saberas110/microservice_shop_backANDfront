@@ -1,13 +1,26 @@
+from pickle import FROZENSET
+
+import jwt
+from django.conf import settings
 import aiohttp
 import asyncio
+
+from django.db.models.expressions import result
 from django.http import JsonResponse
 from django.urls import reverse_lazy
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .permisions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework_simplejwt.tokens import AccessToken
+
+from search_service import ProductSearchService
+from .authenticated import MicroserviceJWTAuthentication
 from .serializers import ProductSerializer, CommentSerializer
 from .models import Product, Comment
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
 
 IS_AUTHENTICATED_URL = 'http://127.0.0.1:8002/accounts/get/user'
 
@@ -18,17 +31,36 @@ async def get_user_data(auth_header):
             return await response.json()
 
 
+class CSRFTokenView(APIView):
+    @method_decorator(ensure_csrf_cookie)
+    def get(self, request):
+        return Response({'message':'CSRF cookie set'})
+
+class ProductView(APIView):
+    def get(self, request, pk):
+        # self.check_permissions(request)
+        query = Product.objects.get(id=pk)
+        srz_data = ProductSerializer(instance=query,context={'request':request})
+        return Response(srz_data.data, status=status.HTTP_200_OK)
 
 
 class ProductListView(APIView):
     def get(self, request):
-        self.check_permissions(request)
         query = Product.objects.all()
-        srz_data = ProductSerializer(instance=query, many=True)
+        srz_data = ProductSerializer(instance=query, many=True, context={'request':request})
         return Response(srz_data.data, status=status.HTTP_200_OK)
 
+class Search(APIView):
+    def get(self, request):
+        service = ProductSearchService(request)
+        result, serializer_class = service.select_search_method()
+        srz_data = serializer_class(result, many=True, context={'request':request})
+        return Response(srz_data.data, status.HTTP_200_OK)
+
+
+
 class ProductAddView(APIView):
-    permission_classes = [IsAuthenticated,]
+    permission_classes = [AllowAny,]
     def post(self, request):
         srz_data = ProductSerializer(data=request.POST)
         if srz_data.is_valid():

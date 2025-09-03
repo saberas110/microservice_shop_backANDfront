@@ -6,3 +6,5 @@ from . import models
 admin.site.register(models.Product)
 admin.site.register(models.Color)
 admin.site.register(models.Comment)
+admin.site.register(models.ProductImages)
+admin.site.register(models.Category)

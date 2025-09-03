@@ -4,10 +4,24 @@ from django.db import models
 from django.db.models import Model
 
 
+class Category(models.Model):
+    name = models.CharField(max_length=40)
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+
+
+
 class Product(models.Model):
+    title = models.CharField(max_length=100, default='')
     name = models.CharField()
     price = models.PositiveIntegerField()
     color = models.ManyToManyField('Color', related_name='products')
+    category = models.ManyToManyField(Category, related_name='products', null=True, blank=True)
+
+
 
     def __str__(self):
         return self.name
@@ -33,4 +47,13 @@ class LikeDisLike(models.Model):
     user = models.CharField(max_length=5)
     like = models.BooleanField(default=False)
     dislike = models.BooleanField(default=False)
+
+
+
+class ProductImages(models.Model):
+    image = models.ImageField(upload_to='image/productImage')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images')
+
+    def __str__(self):
+        return self.product.name
 
