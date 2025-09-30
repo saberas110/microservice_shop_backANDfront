@@ -1,5 +1,3 @@
-from email.policy import default
-
 from django.db import models
 from django.db.models import Model
 
@@ -13,24 +11,49 @@ class Category(models.Model):
 
 
 
-
 class Product(models.Model):
     title = models.CharField(max_length=100, default='')
     name = models.CharField()
-    price = models.PositiveIntegerField()
-    color = models.ManyToManyField('Color', related_name='products')
     category = models.ManyToManyField(Category, related_name='products', null=True, blank=True)
-
-
+    ram = models.ForeignKey("Rom", on_delete=models.CASCADE, related_name='properties', null=True, blank=True)
+    cpu = models.ForeignKey("Cpu", on_delete=models.CASCADE, related_name='properties', null=True, blank=True)
+    memory = models.ForeignKey("Memory", on_delete=models.CASCADE, related_name='properties', null=True, blank=True)
 
     def __str__(self):
-        return self.name
+        return f'{self.name}--{getattr(self.cpu, "name", "No CPU")}--{getattr(self.memory, "name", "No Memory")}'
 
-class Color(models.Model):
-    name = models.CharField(max_length=20)
+
+class Property(models.Model):
+    product = models.ForeignKey("Product", on_delete=models.CASCADE, related_name='properties')
+    color_name = models.CharField(max_length=20)
     color_code = models.CharField(max_length=15)
+    price = models.PositiveIntegerField()
+    available_quantity = models.PositiveIntegerField(default=1)
+
+    def __str__(self):
+        return f'{self.product.name}--{self.color_name}--{self.product.ram}--{self.product.memory}'
+
+
+class Rom(models.Model):
+    name = models.CharField(max_length=100)
+
     def __str__(self):
         return self.name
+
+
+class Cpu(models.Model):
+    name = models.CharField(max_length=100, default='')
+
+    def __str__(self):
+        return self.name
+
+
+class Memory(models.Model):
+    name = models.CharField(max_length=100, default='')
+
+    def __str__(self):
+        return self.name
+
 
 
 class Comment(models.Model):
@@ -51,9 +74,10 @@ class LikeDisLike(models.Model):
 
 
 class ProductImages(models.Model):
-    image = models.ImageField(upload_to='image/productImage')
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images')
+    image = models.ImageField(upload_to='image/productImage', null=True, blank=True)
+    product = models.ManyToManyField(Product, related_name='images')
 
     def __str__(self):
-        return self.product.name
+        first_product = self.product.first()
+        return first_product.name if first_product else "No Product"
 

@@ -6,13 +6,18 @@ urlpatterns = [
     path('register',views.RegisterSetTokenView.as_view()),
     path('csrf',views.CSRFTokenView.as_view()),
     path('getuser',views.GetUser.as_view()),
-
     path('otp', views.RegisterOtpView.as_view()),
     path('user/list', views.UserListView.as_view()),
     path('token', TokenObtainPairView.as_view(), name='token'),
     path('token/refresh', TokenRefreshView.as_view(), name='token_refresh'),
     path('checklogin', views.CheckLoginView.as_view()),
     path('login', views.LoginView.as_view()),
+    path('logout', views.Logout.as_view()),
+    path('addresses', views.AddressView.as_view()),
+    path('selectedaddress/<int:pk>', views.SelectedAddressView.as_view()),
+    path('address/update/<int:pk>', views.AddressView.as_view()),
+    path('address/delete/<int:pk>', views.AddressView.as_view()),
+
 
 
 ]

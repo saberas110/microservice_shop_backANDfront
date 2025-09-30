@@ -1,29 +1,31 @@
 import datetime
-
-from django.contrib.auth import authenticate
+from multiprocessing.connection import address_type
+from django.contrib.auth import authenticate, logout
 from django.http import JsonResponse
-
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.generics import get_object_or_404
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-
-from .front_form_cleans import clean_otp_form
-from .seializers import UserRegisterSerializer, UserListSerializer
+from .seializers import UserRegisterSerializer, UserListSerializer, AddressSerializer
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Otp, User
+from .models import Otp, User, AddressModel
 from random import randint
-
-
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
+
+
+class CSRFTokenView(APIView):
+    @method_decorator(ensure_csrf_cookie)
+    def get(self, request):
+        return Response({'message':'CSRF cookie set'})
+
 
 class RegisterOtpView(APIView):
     def post(self, request):
         phone_number = request.data.get('phone_number')
-        print(phone_number)
         random_code = randint(1000, 9999)
         try:
             otp_code = Otp.objects.get(phone_number=phone_number)
@@ -34,11 +36,6 @@ class RegisterOtpView(APIView):
             print(otp_code.code)
             return Response({'message': 'we sent otp_code to your phone_number'}, status=status.HTTP_200_OK)
 
-
-class CSRFTokenView(APIView):
-    @method_decorator(ensure_csrf_cookie)
-    def get(self, request):
-        return Response({'message':'CSRF cookie set'})
 
 
 class RegisterSetTokenView(APIView):
@@ -73,7 +70,6 @@ class RegisterSetTokenView(APIView):
                 max_age = 3600
             )
             return response
-        print(f'error saber ine : {srz_data.errors}. fahmidi')
         return Response(srz_data.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -118,7 +114,7 @@ class LoginView(APIView):
 
 class UserListView(APIView):
     authentication_classes = [JWTAuthentication,]
-    permission_classes = [IsAuthenticated,]
+    permission_classes = [IsAdminUser]
     def get(self, request):
         users = User.objects.all()
         srz_data = UserListSerializer(instance=users, many=True)
@@ -130,10 +126,9 @@ class GetUser(APIView):
     def get(self, request):
         try:
             token = request.COOKIES.get('access')
-            print('token is', token)
-            user = AccessToken(token)
-            print(user)
-            return Response({'user': 'user'})
+            user = request.user
+            srz_data = UserListSerializer(user)
+            return Response(srz_data.data)
         except Exception as e:
             print(f'saberjan error is {e}')
             return Response({'Exception': e})
@@ -153,3 +148,45 @@ class CheckLoginView(APIView):
             'exp': access.get('exp')
 
         }, status=status.HTTP_200_OK)
+
+class AddressView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get_object(self, pk=None):
+        return get_object_or_404(AddressModel, pk=pk)
+
+    def get(self,request):
+        addresses = AddressModel.objects.filter(user=request.user).order_by('id')
+        srz_data = AddressSerializer(addresses, many=True)
+        return Response(srz_data.data, status=status.HTTP_200_OK)
+
+    def post(self,request):
+        data = request.data
+        AddressModel.objects.create(**data, user=request.user)
+        return Response ({'message:':'Address is Created'}, status.HTTP_201_CREATED)
+
+    def patch(self, request, pk=None):
+        address = self.get_object(pk)
+        serializer = AddressSerializer(address, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        AddressModel.objects.get(user=request.user, id=pk).delete()
+        return Response({'message': 'address  deleted'}, status.HTTP_200_OK)
+
+class SelectedAddressView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request, pk):
+        AddressModel.objects.filter(user=request.user).exclude(id=pk).update(isSelected=False)
+        AddressModel.objects.filter(user=request.user, id=pk).update(isSelected=True)
+        return Response({'message':'is selected address is change'})
+
+
+
+class Logout(APIView):
+    def get(self, request):
+        logout(request)
+        return Response({'message':'logout Done'})
+

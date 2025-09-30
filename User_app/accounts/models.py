@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser,AbstractUser
 from django.forms import DateTimeField
 from .managers import UserManager
+import uuid
 
 
 class User(AbstractBaseUser):
@@ -38,4 +39,18 @@ class Otp(models.Model):
 
     def __str__(self):
         return f'{self.phone_number}-{self.code}'
+
+class AddressModel(models.Model):
+    user = models.ForeignKey(User,on_delete=models.CASCADE,related_name='addresses',null=True)
+    address = models.CharField(max_length=300)
+    receiver_phone = models.CharField(max_length=12)
+    province = models.CharField(max_length=20)
+    city = models.CharField(max_length=20)
+    plaque = models.CharField(max_length=10)
+    postcode = models.CharField(max_length=10)
+    unit = models.CharField(max_length=10, null=True, blank=True)
+    isSelected = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.address
 

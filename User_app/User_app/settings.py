@@ -30,8 +30,6 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-
-    "daphne",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -41,8 +39,6 @@ INSTALLED_APPS = [
     'accounts.apps.AccountsConfig',
     'rest_framework_simplejwt',
     'corsheaders',
-    'chat.apps.ChatConfig'
-
 ]
 
 MIDDLEWARE = [
@@ -76,7 +72,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'User_app.wsgi.application'
-ASGI_APPLICATION = "User_app.asgi.application"
 
 
 CHANNEL_LAYERS = {
@@ -157,8 +152,8 @@ REST_FRAMEWORK = {
 
 }
 
-PRIVATE_KEY_PATH = Path(BASE_DIR) / 'private.pem'
-PUBLIC_KEY_PATH = Path(BASE_DIR) / 'public.pem'
+PRIVATE_KEY_PATH = Path(BASE_DIR) / 'config/keys/private.pem'
+PUBLIC_KEY_PATH = Path(BASE_DIR) / 'config/keys/public.pem'
 
 with open(PRIVATE_KEY_PATH, 'r') as f:
     PRIVATE_KEY = f.read()
@@ -186,7 +181,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
 ]
 
-CSRF_COOKIE_HTTPONLY = False  # برای اینکه JS بتونه CSRF token رو بخونه
+CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_SAMESITE = "Lax"
-CSRF_COOKIE_SECURE = True  # فقط روی HTTPS
+CSRF_COOKIE_SECURE = True
 

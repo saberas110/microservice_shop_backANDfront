@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from xml.dom import ValidationErr
 
 from rest_framework import serializers
-from .models import User, Otp
+from .models import User, Otp, AddressModel
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
@@ -34,4 +34,9 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 class UserListSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
+        fields = '__all__'
+
+class AddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AddressModel
         fields = '__all__'
